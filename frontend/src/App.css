@@ -53,3 +53,54 @@
   background: #21b580;
   box-shadow: 0 8px 18px rgba(33, 181, 128, 0.35);
 }
+
+.bg-login {
+  background: radial-gradient(circle at 20% 20%, rgba(33, 181, 128, 0.12), transparent 32%),
+    radial-gradient(circle at 80% 15%, rgba(23, 111, 236, 0.12), transparent 30%),
+    linear-gradient(180deg, #f7fbf8 0%, #e3f1eb 50%, #dbe7f4 100%);
+}
+
+.floating-circle {
+  position: absolute;
+  border-radius: 999px;
+  opacity: 0.35;
+  filter: blur(2px);
+  animation: float 16s ease-in-out infinite;
+}
+
+.circle-1 {
+  width: 280px;
+  height: 280px;
+  background: rgba(33, 181, 128, 0.18);
+  top: 8%;
+  left: 12%;
+  animation-delay: 0s;
+}
+
+.circle-2 {
+  width: 220px;
+  height: 220px;
+  background: rgba(23, 111, 236, 0.16);
+  top: 18%;
+  right: 16%;
+  animation-delay: 4s;
+}
+
+.circle-3 {
+  width: 320px;
+  height: 320px;
+  background: rgba(12, 64, 36, 0.12);
+  bottom: -4%;
+  left: 30%;
+  animation-delay: 8s;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-18px) scale(1.02);
+  }
+}

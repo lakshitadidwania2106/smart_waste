@@ -6,9 +6,11 @@ import AdminDashboard from './components/AdminDashboard'
 import WorkerDashboard from './components/WorkerDashboard'
 import CustomerDashboard from './components/CustomerDashboard'
 import { useDashboardData } from './hooks/useDashboardData'
+import LoginPage from './components/LoginPage'
 
 function App() {
   const [role, setRole] = useState('Admin')
+  const [loggedIn, setLoggedIn] = useState(false)
   const { data, setData, loading, error } = useDashboardData()
   const { bins, zones, feedback, worker, customer } = data
 
@@ -42,6 +44,15 @@ function App() {
       message,
     }
     setData((prev) => ({ ...prev, feedback: [newEntry, ...prev.feedback] }))
+  }
+
+  const handleLogin = ({ role: selectedRole }) => {
+    setRole(selectedRole || 'Admin')
+    setLoggedIn(true)
+  }
+
+  if (!loggedIn) {
+    return <LoginPage onLogin={handleLogin} defaultRole={role} />
   }
 
   const renderDashboard = () => {
