@@ -12,17 +12,17 @@ function App() {
   const [role, setRole] = useState('Admin')
   const [loggedIn, setLoggedIn] = useState(false)
   const { data, setData, loading, error } = useDashboardData()
-  const { bins, zones, feedback, worker, customer } = data
+  const { bins = [], zones = [], feedback = [], worker = {}, customer = {} } = data || {}
 
   const workerBins = useMemo(
-    () => bins.filter((b) => b.zoneId === worker.zoneId),
-    [bins, worker.zoneId],
+    () => (Array.isArray(bins) && worker?.zoneId ? bins.filter((b) => b.zoneId === worker.zoneId) : []),
+    [bins, worker?.zoneId],
   )
 
   const handleEmptied = (binId) => {
     setData((prev) => ({
       ...prev,
-      bins: prev.bins.map((b) =>
+      bins: (prev?.bins || []).map((b) =>
         b.id === binId
           ? {
               ...b,
@@ -38,12 +38,12 @@ function App() {
   const handleFeedbackSubmit = ({ message, rating, name }) => {
     const newEntry = {
       id: Date.now(),
-      name: name || customer.name || 'Customer',
-      zoneId: customer.zoneId,
+      name: name || customer?.name || 'Customer',
+      zoneId: customer?.zoneId || 'unknown',
       rating,
       message,
     }
-    setData((prev) => ({ ...prev, feedback: [newEntry, ...prev.feedback] }))
+    setData((prev) => ({ ...prev, feedback: [newEntry, ...(prev?.feedback || [])] }))
   }
 
   const handleLogin = ({ role: selectedRole }) => {
@@ -61,7 +61,7 @@ function App() {
         <WorkerDashboard
           worker={worker}
           bins={workerBins}
-          zoneName={zones.find((z) => z.id === worker.zoneId)?.name}
+          zoneName={zones.find((z) => z.id === worker?.zoneId)?.name || 'Unknown Zone'}
           onEmptied={handleEmptied}
         />
       )
@@ -72,7 +72,7 @@ function App() {
         <CustomerDashboard
           customer={customer}
           bins={bins}
-          zoneName={zones.find((z) => z.id === customer.zoneId)?.name}
+          zoneName={zones.find((z) => z.id === customer?.zoneId)?.name || 'Unknown Zone'}
           onSubmitFeedback={handleFeedbackSubmit}
         />
       )
