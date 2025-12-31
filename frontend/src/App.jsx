@@ -7,32 +7,78 @@ import WorkerDashboard from './components/WorkerDashboard'
 import CustomerDashboard from './components/CustomerDashboard'
 import { useDashboardData } from './hooks/useDashboardData'
 import LoginPage from './components/LoginPage'
+import { API } from './api'
 
 function App() {
   const [role, setRole] = useState('Admin')
   const [loggedIn, setLoggedIn] = useState(false)
-  const { data, setData, loading, error } = useDashboardData()
+  const [userCredentials, setUserCredentials] = useState(null)
+  const { data, setData, loading, error } = useDashboardData(userCredentials)
   const { bins = [], zones = [], feedback = [], worker = {}, customer = {} } = data || {}
 
-  const workerBins = useMemo(
-    () => (Array.isArray(bins) && worker?.zoneId ? bins.filter((b) => b.zoneId === worker.zoneId) : []),
-    [bins, worker?.zoneId],
-  )
+  const workerBins = useMemo(() => {
+    if (!Array.isArray(bins)) return []
+    if (!worker?.zoneId) return bins // If no zoneId, return all bins (shouldn't happen but safe fallback)
+    
+    const normalizeId = (id) => {
+      if (!id) return ''
+      return id.toString().trim()
+    }
+    
+    const workerZoneId = normalizeId(worker.zoneId)
+    const filtered = bins.filter((b) => {
+      const binZoneId = normalizeId(b.zoneId)
+      return binZoneId === workerZoneId && binZoneId !== ''
+    })
+    
+    // If no bins found, log for debugging
+    if (filtered.length === 0 && bins.length > 0) {
+      console.log('Worker bins filter - No matches found:', {
+        workerZoneId,
+        binZoneIds: bins.map(b => normalizeId(b.zoneId)),
+        binsCount: bins.length
+      })
+    }
+    
+    return filtered
+  }, [bins, worker?.zoneId])
 
-  const handleEmptied = (binId) => {
-    setData((prev) => ({
-      ...prev,
-      bins: (prev?.bins || []).map((b) =>
-        b.id === binId
-          ? {
-              ...b,
-              fillLevel: 0,
-              status: 'Active',
-              lastCollected: new Date().toISOString(),
-            }
-          : b,
-      ),
-    }))
+  const handleEmptied = async (binId) => {
+    try {
+      // Call backend API to update bin
+      await API.put(`/api/workers/bin/${binId}/empty`)
+      
+      // Update local state
+      setData((prev) => ({
+        ...prev,
+        bins: (prev?.bins || []).map((b) =>
+          b.id === binId
+            ? {
+                ...b,
+                fillLevel: 0,
+                status: 'Active',
+                lastCollected: new Date().toISOString(),
+              }
+            : b,
+        ),
+      }))
+    } catch (err) {
+      console.error('Failed to update bin:', err)
+      // Still update UI optimistically
+      setData((prev) => ({
+        ...prev,
+        bins: (prev?.bins || []).map((b) =>
+          b.id === binId
+            ? {
+                ...b,
+                fillLevel: 0,
+                status: 'Active',
+                lastCollected: new Date().toISOString(),
+              }
+            : b,
+        ),
+      }))
+    }
   }
 
   const handleFeedbackSubmit = ({ message, rating, name }) => {
@@ -46,8 +92,9 @@ function App() {
     setData((prev) => ({ ...prev, feedback: [newEntry, ...(prev?.feedback || [])] }))
   }
 
-  const handleLogin = ({ role: selectedRole }) => {
+  const handleLogin = ({ role: selectedRole, email }) => {
     setRole(selectedRole || 'Admin')
+    setUserCredentials({ role: selectedRole || 'Admin', email: email || '' })
     setLoggedIn(true)
   }
 

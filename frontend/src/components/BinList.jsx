@@ -5,6 +5,14 @@ export default function BinList({ bins, onEmptied }) {
     return { label: 'OK', color: 'bg-primary-50 text-primary-700' }
   }
 
+  if (!bins || bins.length === 0) {
+    return (
+      <div className="glass-card rounded-2xl border border-slate-100 p-8 text-center">
+        <p className="text-slate-500">No bins assigned to your zone yet.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {bins.map((bin) => (

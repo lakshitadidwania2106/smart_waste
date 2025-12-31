@@ -8,9 +8,37 @@ export default function CustomerDashboard({
   zoneName,
   onSubmitFeedback,
 }) {
-  const nearbyBins = bins
-    .filter((b) => b.zoneId === customer.zoneId)
-    .sort((a, b) => b.fillLevel - a.fillLevel)
+  // Helper to normalize IDs for comparison
+  const normalizeId = (id) => {
+    if (!id) return ''
+    return id.toString().trim()
+  }
+
+  const nearbyBins = (() => {
+    if (!Array.isArray(bins)) return []
+    if (!customer?.zoneId) {
+      console.log('Customer dashboard - No zoneId for customer:', customer)
+      return []
+    }
+    
+    const customerZoneId = normalizeId(customer.zoneId)
+    const filtered = bins.filter((b) => {
+      const binZoneId = normalizeId(b.zoneId)
+      return binZoneId === customerZoneId && binZoneId !== ''
+    })
+    
+    // If no bins found, log for debugging
+    if (filtered.length === 0 && bins.length > 0) {
+      console.log('Customer bins filter - No matches found:', {
+        customerZoneId,
+        binZoneIds: bins.map(b => normalizeId(b.zoneId)),
+        binsCount: bins.length,
+        customer
+      })
+    }
+    
+    return filtered.sort((a, b) => (b.fillLevel || 0) - (a.fillLevel || 0))
+  })()
 
   const scorePercent = Math.min(100, Math.max(0, customer.score))
 
@@ -34,30 +62,45 @@ export default function CustomerDashboard({
           </div>
 
           <div className="space-y-3">
-            {nearbyBins.map((bin) => (
-              <div
-                key={bin.id}
-                className="rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {bin.location}
-                    </p>
-                    <p className="text-xs text-slate-500">Bin ID: {bin.id}</p>
+            {nearbyBins.length > 0 ? (
+              nearbyBins.map((bin) => (
+                <div
+                  key={bin.id}
+                  className="rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {bin.location || 'Unknown Location'}
+                      </p>
+                      <p className="text-xs text-slate-500">Bin ID: {bin.id}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700">
+                      {bin.fillLevel || 0}% full
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-slate-700">
-                    {bin.fillLevel}% full
-                  </span>
+                  <div className="mt-2 h-2 rounded-full bg-white">
+                    <div
+                      className={`h-2 rounded-full ${(bin.fillLevel || 0) >= 80 ? 'bg-red-400' : 'bg-primary-500'}`}
+                      style={{ width: `${bin.fillLevel || 0}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="mt-2 h-2 rounded-full bg-white">
-                  <div
-                    className={`h-2 rounded-full ${bin.fillLevel >= 80 ? 'bg-red-400' : 'bg-primary-500'}`}
-                    style={{ width: `${bin.fillLevel}%` }}
-                  />
-                </div>
+              ))
+            ) : (
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-6 text-center">
+                <p className="text-sm text-slate-500">
+                  {bins.length === 0 
+                    ? 'No bins available in your zone yet.'
+                    : `No bins found for zone: ${zoneName || 'Unknown'}`}
+                </p>
+                {bins.length > 0 && (
+                  <p className="text-xs text-slate-400 mt-1">
+                    Total bins in system: {bins.length}
+                  </p>
+                )}
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -100,7 +143,7 @@ export default function CustomerDashboard({
         <div className="lg:col-span-2">
           <FeedbackForm onSubmit={onSubmitFeedback} />
         </div>
-        <MapCard title="Nearby Bins Map" />
+        <MapCard title="Nearby Bins Map" bins={nearbyBins} />
       </div>
     </div>
   )

@@ -23,7 +23,7 @@ export default function WorkerDashboard({ worker, bins, zoneName, onEmptied }) {
         <div className="lg:col-span-2">
           <BinList bins={bins} onEmptied={onEmptied} />
         </div>
-        <MapCard title="Zone Map" />
+        <MapCard title="Zone Map" bins={bins} />
       </div>
     </div>
   )

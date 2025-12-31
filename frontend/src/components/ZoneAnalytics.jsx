@@ -1,17 +1,33 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 export default function ZoneAnalytics({ bins, zones }) {
+  // Helper to normalize IDs for comparison
+  const normalizeId = (id) => {
+    if (!id) return ''
+    return id.toString()
+  }
+
   const data = zones.map((zone) => {
-    const zoneBins = bins.filter((b) => b.zoneId === zone.id)
+    const zoneId = normalizeId(zone.id || zone._id)
+    const zoneBins = bins.filter((b) => {
+      const binZoneId = normalizeId(b.zoneId)
+      return binZoneId === zoneId
+    })
+    
     const avgFill =
-      zoneBins.reduce((acc, b) => acc + b.fillLevel, 0) /
-      (zoneBins.length || 1)
-    const fullCount = zoneBins.filter((b) => b.fillLevel >= 80).length
+      zoneBins.length > 0
+        ? zoneBins.reduce((acc, b) => acc + (b.fillLevel || 0), 0) / zoneBins.length
+        : 0
+    const fullCount = zoneBins.filter((b) => (b.fillLevel || 0) >= 80).length
+    
     return {
-      zone: zone.name,
+      zone: zone.name || zone.zoneName || 'Unknown Zone',
       avgFill: Math.round(avgFill),
       fullBins: fullCount,
     }
+  }).filter(item => {
+    // Keep zones that have bins or if it's the only zone
+    return item.avgFill > 0 || item.fullBins > 0 || zones.length === 1
   })
 
   return (
